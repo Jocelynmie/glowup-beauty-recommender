@@ -29,7 +29,7 @@ function validate(body: any): { ok: true; value: FeatureInput } | { ok: false; e
     const value = body?.[f];
     const allowed = OPTIONS[f].map((o) => o.value);
     if (typeof value !== 'string' || !allowed.includes(value as never)) {
-      return { ok: false, error: `字段 ${f} 缺失或取值非法，应为：${allowed.join(' / ')}` };
+      return { ok: false, error: `Field "${f}" is missing or invalid; expected one of: ${allowed.join(' / ')}` };
     }
   }
   return { ok: true, value: body as FeatureInput };
@@ -46,5 +46,5 @@ app.post('/api/recommend', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`✨ GlowUp API 已启动: http://localhost:${PORT}`);
+  console.log(`✨ GlowUp API is running: http://localhost:${PORT}`);
 });

@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      // 把 /api 请求代理到后端，避免跨域
+      // Proxy /api requests to the backend to avoid CORS issues
       '/api': 'http://localhost:4000',
     },
   },
