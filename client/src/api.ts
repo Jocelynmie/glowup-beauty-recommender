@@ -23,9 +23,20 @@ export async function getOptions(): Promise<OptionsResponse> {
   return handle<OptionsResponse>(res);
 }
 
-// Submit the selected features and get a recommendation back
-export async function postRecommend(input: FeatureInput): Promise<Recommendation> {
-  const res = await fetch(`${BASE}/recommend`, {
+// Check backend health and whether AI enhancement is configured
+export async function getHealth(): Promise<{ ok: boolean; aiEnabled: boolean }> {
+  const res = await fetch(`${BASE}/health`);
+  return handle<{ ok: boolean; aiEnabled: boolean }>(res);
+}
+
+// Submit the selected features and get a recommendation back.
+// When `useAi` is true, hits the AI-enhanced endpoint (which itself falls back
+// to the rule-based result server-side if AI is unavailable).
+export async function postRecommend(
+  input: FeatureInput,
+  useAi = false,
+): Promise<Recommendation> {
+  const res = await fetch(`${BASE}/recommend${useAi ? '/ai' : ''}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),

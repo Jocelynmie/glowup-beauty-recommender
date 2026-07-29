@@ -32,15 +32,19 @@ Rationale: both frontend and backend use TypeScript, so types are reusable and d
 ```
 GlowUp-Project/
 ├── README.md                    # This document
+├── DEPLOYMENT.md                # Local dev, tests, and production deployment guide
 ├── server/                      # Backend (Express + TS)
 │   ├── package.json
 │   ├── tsconfig.json
+│   ├── .env.example             # Optional ANTHROPIC_API_KEY / PORT
 │   └── src/
 │       ├── index.ts             # Express entry + routes + input validation
 │       └── recommendation/
 │           ├── types.ts         # Domain model / type definitions
 │           ├── knowledgeBase.ts # Form options + seasonal color palettes + lip palettes
-│           └── engine.ts        # Core recommendation engine logic
+│           ├── engine.ts        # Core recommendation engine logic
+│           ├── engine.test.ts   # Unit tests (node:test via tsx)
+│           └── aiEnhance.ts     # Optional Claude-based prose refinement (graceful fallback)
 └── client/                      # Frontend (React + Vite + TS)
     ├── package.json
     ├── vite.config.ts           # Includes /api proxy configuration
@@ -48,10 +52,10 @@ GlowUp-Project/
     ├── index.html
     └── src/
         ├── main.tsx
-        ├── index.css            # Tailwind + gradient background
+        ├── index.css            # Tailwind + gradient background + entrance animations
         ├── types.ts             # Frontend types (synced with backend)
-        ├── api.ts               # API client (getOptions / postRecommend)
-        ├── App.tsx              # Main UI: loads options, form state, submit flow
+        ├── api.ts               # API client (getOptions / getHealth / postRecommend)
+        ├── App.tsx              # Main UI: loads options, form state, submit flow, AI toggle
         └── components/
             ├── FeatureForm.tsx  # Dynamic feature selectors + validation
             ├── Results.tsx      # Makeup / outfit / jewelry result cards
@@ -60,28 +64,28 @@ GlowUp-Project/
 
 ---
 
-## 4. Current Progress (as of 2026-07-22)
+## 4. Current Progress (as of 2026-07-29)
 
 ### ✅ Completed
 - **Backend recommendation engine**: complete rule mappings — face shape → contour/blush/jewelry, facial features → eye makeup/brows/lips
 - **Knowledge base**: 6 seasonal color palettes (cool/warm/neutral × light/deep), lip palettes categorized by undertone, and all form options (with labels and hints)
 - **Express API**:
-  - `GET /api/health` — health check
+  - `GET /api/health` — health check (also reports whether AI is available)
   - `GET /api/options` — returns form options for dynamic frontend rendering
-  - `POST /api/recommend` — core recommendation endpoint (with enum validation)
-- **Frontend (full flow)**: `types.ts` + `api.ts` data layer; `FeatureForm` with dynamic selectors and completion validation; submit flow with loading/error states; `Results` cards for makeup / outfit / jewelry; `ColorSwatch` chips with click-to-copy
-- **Frontend–backend integration**: verified end-to-end — options load, recommendations return for cool/warm paths, Vite `/api` proxy works, `npm run build` type-checks with no errors
-- **Documentation & code language**: all docs and in-code comments/strings translated to English
+  - `POST /api/recommend` — core rule-based recommendation (with enum validation)
+  - `POST /api/recommend/ai` — AI-refined recommendation; falls back to rule-based if no API key
+- **AI enhancement (optional)**: `aiEnhance.ts` uses the Anthropic SDK (Claude `claude-opus-4-8`, structured outputs) to rewrite the prose in a warmer, personalized voice while keeping all color palettes deterministic. Fully optional — the app runs offline on rules when no `ANTHROPIC_API_KEY` is set.
+- **Frontend (full flow)**: `types.ts` + `api.ts` data layer; `FeatureForm` with dynamic selectors and completion validation; submit flow with loading/error states; `Results` cards; `ColorSwatch` chips with click-to-copy; entrance animations; "✨ AI refine" toggle (shown only when AI is available) + "AI refined" badge
+- **Tests**: `engine.test.ts` — 13 unit tests covering season mapping, jewelry metal, lip palettes, and per-face-shape advice (`npm test`)
+- **Frontend–backend integration**: verified end-to-end — options load, recommendations return for all undertone/skin paths, AI endpoint falls back cleanly, Vite `/api` proxy works, both `npm run build` type-check with no errors
+- **Docs**: `DEPLOYMENT.md` (local dev, tests, production build/hosting, env vars); all docs and code in English
 
-### ⏳ To Do
-- Extra UI polish: mobile fine-tuning, entrance animations
-- (Optional) AI enhancement endpoint to refine rule-based results
-- Unit tests for the recommendation engine
-- Deployment docs and demo
+### ✅ Project complete
+All planned milestones (rule engine → full UI → integration → AI enhancement → tests → deployment docs) are done. Possible future work: image-based face-shape detection, saved profiles, more granular color analysis.
 
 ---
 
-## 5. Work Log (2026-07-05 ~ 2026-07-22)
+## 5. Work Log (2026-07-05 ~ 2026-07-29)
 
 | Date | Phase | Details |
 | --- | --- | --- |
@@ -100,17 +104,23 @@ GlowUp-Project/
 | 07-20 | Submit → result flow | Wired `App.tsx`: POST /api/recommend, loading/error states, smooth scroll to results, "Start over" |
 | 07-21 | Result cards & swatches | Built `Results` (makeup/outfit/jewelry cards) and `ColorSwatch` (click-to-copy color chips) |
 | 07-22 | Integration & verify | Installed deps, ran frontend + backend, verified full flow end-to-end and a clean production build |
+| 07-23 | UI polish | Added entrance animations (fade-up + stagger, `prefers-reduced-motion` aware) to result cards; responsive tuning |
+| 07-24 | UX touches | Loading/error copy, smooth scroll to results, "Start over"; QA across undertone/skin-tone combinations |
+| 07-25 | AI enhancement — design | Designed the Claude refinement prompt + structured-output schema; keep palettes deterministic, refine prose only |
+| 07-27 | AI enhancement — build | Implemented `aiEnhance.ts` + `POST /api/recommend/ai` with graceful fallback; added the frontend AI toggle + badge |
+| 07-28 | Tests | Wrote `engine.test.ts` (13 tests, `node:test` via tsx); all passing |
+| 07-29 | Deployment & wrap-up | Wrote `DEPLOYMENT.md` + `.env.example`, finalized README, and pushed to GitHub |
 
 ---
 
-## 6. Plan (2026-07-23 ~ 2026-07-29)
+## 6. Plan (2026-07-23 ~ 2026-07-29) — ✅ complete
 
-- [ ] **07-23**: Extra UI polish — mobile fine-tuning, entrance animations
-- [ ] **07-24**: UX touches — empty/error copy, result scrolling; QA across input combinations
-- [ ] **07-25**: (Optional) AI enhancement — design a Claude-API prompt to personalize rule-based copy
-- [ ] **07-27**: (Optional) AI enhancement — implement `/api/recommend/ai` with fallback to rule-based results
-- [ ] **07-28**: Unit tests for the recommendation engine; fix issues found
-- [ ] **07-29**: Deployment docs, demo prep, and final README update
+- [x] **07-23**: Extra UI polish — entrance animations, responsive tuning
+- [x] **07-24**: UX touches — empty/error copy, result scrolling; QA across input combinations
+- [x] **07-25**: AI enhancement — Claude-API prompt + structured-output schema for personalized copy
+- [x] **07-27**: AI enhancement — `/api/recommend/ai` with fallback to rule-based results; frontend toggle
+- [x] **07-28**: Unit tests for the recommendation engine
+- [x] **07-29**: Deployment docs and final README update
 
 ---
 

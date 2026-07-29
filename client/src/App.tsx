@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { getOptions, postRecommend } from './api';
+import { getOptions, getHealth, postRecommend } from './api';
 import type {
   FeatureDraft, FeatureInput, FeatureKey, OptionsResponse, Recommendation,
 } from './types';
@@ -13,13 +13,18 @@ export default function App() {
   const [result, setResult] = useState<Recommendation | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [aiAvailable, setAiAvailable] = useState(false);
+  const [useAi, setUseAi] = useState(false);
   const resultsRef = useRef<HTMLDivElement>(null);
 
-  // Load the form options once on mount
+  // Load the form options once on mount, and check whether AI is available
   useEffect(() => {
     getOptions()
       .then(setOptions)
       .catch((e: Error) => setOptionsError(e.message));
+    getHealth()
+      .then((h) => setAiAvailable(h.aiEnabled))
+      .catch(() => setAiAvailable(false));
   }, []);
 
   const handleChange = (key: FeatureKey, value: string) => {
@@ -30,7 +35,7 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      const rec = await postRecommend(draft as FeatureInput);
+      const rec = await postRecommend(draft as FeatureInput, useAi);
       setResult(rec);
       // Smoothly scroll to the results after they render
       window.setTimeout(() => {
@@ -72,6 +77,20 @@ export default function App() {
 
       {options && (
         <div className="space-y-8">
+          {aiAvailable && (
+            <label className="flex cursor-pointer items-center justify-center gap-3 rounded-2xl bg-white/70 p-4 text-sm shadow-sm ring-1 ring-black/5">
+              <input
+                type="checkbox"
+                checked={useAi}
+                onChange={(e) => setUseAi(e.target.checked)}
+                className="h-4 w-4 accent-pink-500"
+              />
+              <span className="text-gray-700">
+                ✨ <span className="font-medium">AI refine</span> — personalize the wording with Claude
+              </span>
+            </label>
+          )}
+
           <FeatureForm
             options={options}
             draft={draft}
@@ -89,7 +108,14 @@ export default function App() {
           {result && (
             <div ref={resultsRef} className="space-y-4 pt-2">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-800">Your GlowUp Plan</h2>
+                <h2 className="flex items-center gap-2 text-2xl font-bold text-gray-800">
+                  Your GlowUp Plan
+                  {result.usedAi && (
+                    <span className="rounded-full bg-gradient-to-r from-pink-500 to-fuchsia-500 px-2.5 py-0.5 text-xs font-semibold text-white">
+                      ✨ AI refined
+                    </span>
+                  )}
+                </h2>
                 <button
                   type="button"
                   onClick={handleReset}

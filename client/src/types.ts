@@ -72,4 +72,6 @@ export interface Recommendation {
   makeup: MakeupAdvice;
   outfit: OutfitAdvice;
   jewelry: JewelryAdvice;
+  // Present on responses from the AI endpoint: whether AI refinement actually ran
+  usedAi?: boolean;
 }
